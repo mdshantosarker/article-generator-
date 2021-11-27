@@ -1,0 +1,735 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Annotated Articles Generator </title>
+
+    <!-- <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.0/css/bootstrap.min.css" rel="stylesheet"> -->
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.1.1/socket.io.js"></script>
+    <!-- https://github.com/mqttjs/MQTT.js#browser  -->
+    <script src="https://unpkg.com/mqtt@2.18.8/dist/mqtt.min.js"></script>
+   <!-- <link href="https://maxcdn.bootstrapcdn.com/bootswatch/3.3.7/paper/bootstrap.min.css" rel="stylesheet" integrity="sha384-awusxf8AUojygHf2+joICySzB780jVvQaVCAt1clU3QsyAitLGul28Qxb2r1e5g+" crossorigin="anonymous"> -->
+
+   <link href="https://maxcdn.bootstrapcdn.com/bootswatch/3.3.7/readable/bootstrap.min.css" rel="stylesheet" integrity="sha384-Li5uVfY2bSkD3WQyiHX8tJd0aMF91rMrQP5aAewFkHkVSTT2TmD2PehZeMmm7aiL" crossorigin="anonymous">
+
+  <link href="https://cdn.quilljs.com/1.3.2/quill.snow.css" rel="stylesheet">
+<!-- <link rel="stylesheet" href="//cdn.quilljs.com/1.3.1/quill.bubble.css"> -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.7.0/css/font-awesome.min.css">
+
+<script src="https://togetherjs.com/togetherjs-min.js"></script>
+
+<!-- https://github.com/eligrey/FileSaver.js -->
+<script src="https://fastcdn.org/FileSaver.js/1.1.20151003/FileSaver.min.js"></script>
+  </head>
+  <body>
+
+<style>
+#counter {
+  border: 1px solid #ccc;
+  border-width: 0px 1px 1px 1px;
+  color: #aaa;
+  padding: 5px 15px;
+  text-align: right;
+}
+
+
+div#editor {
+    height: 500px;
+}
+
+.ql-author:after {
+  content: "a";
+}
+
+.hidden {
+    display: none;
+}
+
+/*select.form-control.navbarCustom {
+    color: white;
+}*/
+
+</style>
+
+<nav class="navbar navbar-default">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-2">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="/annotated_article_generator">Annotated Article Generator  - <span class="text-success"> beta </span> 
+      </a>
+      
+    </div>
+
+
+
+    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-2">
+      <ul class="nav navbar-nav">
+     
+      </ul>
+
+      <ul class="nav navbar-nav navbar-right">
+        <li><a href="https://github.com/pietrop/annotated_article_generator" target="blank">About</a></li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+
+<!-- Include stylesheet -->
+<div class="container-fluid">
+
+
+
+<div class="row">
+
+<div  id="tvControls">
+ <div class="col-xs-12 col-sm-4 col-md-4 col-lg-4 ">
+
+<div class="form-group">
+      <label for="select" class=" col-xs-4 col-sm-4 col-md-4 col-lg-4 control-label">Tv channel</label>
+      <div class="col-xs-7 col-sm-7 col-md-7 col-lg-7">
+        <select class="form-control" id="channelSelect">
+        </select>
+      </div>
+    </div>
+</div>
+
+  <div class="col-xs-12 col-sm-2 col-md-2 col-lg-2">
+<!-- <div class="btn-group btn-group-justified"> -->
+  <button href="#" class="btn btn-sm btn-primary startConnection"> <span class="glyphicon glyphicon-play-circle" aria-hidden="true"></span></button>
+  <button href="#" class="btn btn-sm btn-primary closeConnection" disabled> <span class="glyphicon glyphicon-off" aria-hidden="true"></span></button>
+<!-- </div> -->
+ </div>
+
+</div><!-- tvControls -->
+
+   <div class="col-xs-12 col-sm-6 col-md-6 col-lg-6">
+       <button class="btn btn-sm btn-default" id="exampleBtn"> Example </button>
+
+      <button class="btn btn-sm btn-default"  id="start-togetherjs" type="button" onclick="TogetherJS(this); return false;" data-end-togetherjs-html="End Collaboration" >Collaborate</button>
+      <button href="#" class="btn btn-sm btn-default " disabled> <span class="glyphicon glyphicon-floppy-disk" aria-hidden="true"></span></button>
+      <button href="#" class="btn btn-sm btn-default  makeHTML"> <span class="glyphicon glyphicon-save" aria-hidden="true"></span> Download Article </button>
+ 
+      <!-- <button type="button" class="btn btn-sm btn-default" data-toggle="modal" data-target=".channelSettingsModal"> <span class="g glyphicon glyphicon-cog" aria-hidden="true"></button> -->
+ </div>
+
+</div>
+
+<div class="row">
+ 
+ </div>
+  
+  <br>
+  <div id="editor">
+    <h1>Some title For your Article</h1>
+    <br> <br>
+  </div>
+
+<!-- <div id="counter"></div> -->
+
+</div>
+
+
+<!-- Modal for channel settings -->
+
+<div class="modal fade channelSettingsModal" tabindex="-1" role="dialog" aria-labelledby="channelSettingsModal">
+   <form id="channelsSettings">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h4 class="modal-title">Streams settings</h4>
+      </div>
+      <div class="modal-body">
+       
+        <div class="row">
+          <div class="col-xs-12 col-sm-5 col-md-5 col-lg-5">
+            <div class="form-group">
+              <label class="control-label" for="focusedInput">Channel Name</label>
+              <input class="form-control" name="channel-name" type="text" value="" placeholder="A Channel Name">
+            </div>
+          </div>
+          <div class="col-xs-12 col-sm-7 col-md-7 col-lg-7">
+             <div class="form-group">
+              <label class="control-label" for="focusedInput">Channel Streaming URL</label>
+              <input class="form-control" name="channel-url" type="text" value="" placeholder="https://...">
+             </div>
+          </div>
+        </div>
+        </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default closeChannelsSettingsBtn" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary saveChannelsSettingsBtn">Save changes</button>
+      </div>
+
+    </div>
+  </div>
+  </form>
+</div>
+<!-- Include the Quill library -->
+<script src="https://cdn.quilljs.com/1.3.2/quill.js"></script>
+<!-- Initialize Quill editor -->
+<script>
+
+var toolbarOptions = [
+  [{ 'header': [1, 2, 3, 4, 5, 6, false] }],
+
+  ['bold', 'italic', 'underline', 'strike'],        // toggled buttons
+  ['blockquote','author','code-block'],
+  ['link', 'image', 'video'],
+
+  // [{ 'header': 1 }, { 'header': 2 }],               // custom button values
+  [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+  // [{ 'script': 'sub'}, { 'script': 'super' }],      // superscript/subscript
+  [{ 'indent': '-1'}, { 'indent': '+1' }],          // outdent/indent
+  // [{ 'direction': 'rtl' }],                         // text direction
+  [{ 'size': ['small', false, 'large', 'huge'] }],  // custom dropdown
+
+  [{ 'color': [] }, { 'background': [] }],          // dropdown with defaults from theme
+  // [{ 'font': [] }],
+  [{ 'align': [] }],
+
+  ['clean']                                       // remove formatting button
+];
+
+
+var quill = new Quill('#editor', {
+  theme: 'snow',//bubble snow
+   modules: {
+    toolbar: toolbarOptions//'#toolbar'//,
+    //  counter: {
+    //   container: '#counter',
+    //   unit: 'word'
+    // }
+  }
+});
+
+var toolbar = quill.getModule('toolbar');
+toolbar.addHandler('author', function() {
+  // console.log('author')
+});
+
+
+var customButton = document.querySelector('.ql-author');
+customButton.addEventListener('click', function() {
+  var range = quill.getSelection();
+  if (range) {
+    quill.insertEmbed(range.index, "<footer>Author</footer>");
+  }
+});
+</script>
+<script>
+// var client  = mqtt.connect('mqtt://iot.eclipse.org/bbc/subtitles/bbc_news24/compacted');
+
+'use strict';
+
+var startConnectionEl = document.querySelector('.startConnection');
+var closeConnectionEl = document.querySelector('.closeConnection');
+var channelSelectEl   = document.getElementById('channelSelect');
+var tvControlsEl = document.getElementById('tvControls');
+var saveChannelsSettingsBtn = document.querySelector('.saveChannelsSettingsBtn');
+var closeChannelsSettingsBtn = document.querySelector('.closeChannelsSettingsBtn');
+var exampleBtn  = document.getElementById('exampleBtn');
+
+var channelsFeedUrl = [ 
+  {
+    channelName: "C-SPAN", 
+    type: 'socket',
+    channelUrl: "https://openedcaptions.com:443"
+  },
+  {
+    channelName: "CNN", 
+    type: 'socket',
+    channelUrl: "http://openedcaptions.media.mit.edu:8080"
+  },
+  {
+    channelName: "Fox", 
+    type: 'socket',
+    channelUrl: "http://openedcaptions.media.mit.edu:8082"
+  },
+  {
+    channelName: "MSNBC", 
+    type: 'socket',
+    channelUrl: "http://openedcaptions.media.mit.edu:8081"
+  },
+  // this one is for when running MQTT from a backend server
+  // need to un comment this to use with backend server in this repo
+  // {
+  //   channelName: "BBC News 24 v1",
+  //   type: 'socket',
+  //   channelUrl: "http://localhost:8002"
+  // },
+  {
+    channelName: "BBC News 24",
+    type: 'mqtt',
+    channelUrl: "wss://iot.eclipse.org:443/ws",
+    topic: 'bbc/subtitles/bbc_news24/raw'
+  },
+  {
+    channelName: "BBC One London",
+    type: 'mqtt',
+    channelUrl: "wss://iot.eclipse.org:443/ws",
+    topic: 'bbc/subtitles/bbc_one_london/raw'
+  },
+  {
+    channelName: "BBC Two England",
+    type: 'mqtt',
+    channelUrl: "wss://iot.eclipse.org:443/ws",
+    topic: 'bbc/subtitles/bbc_two_england/raw'
+  }
+];
+
+
+
+
+setFeedChannels(channelsFeedUrl)
+
+function setFeedChannels(channels){
+  // console.log(channels)
+  // saveChannelsLocally(channels);
+  // reset
+  channelSelectEl.innerHTML= "";
+  //display 
+  channels.forEach((oneChannel)=>{
+      var option = document.createElement('option');
+      option.value = oneChannel.channelUrl;
+      option.dataset.connectionType = oneChannel.type;
+      if(oneChannel.topic !== undefined){
+        option.dataset.topic = oneChannel.topic;
+      }
+      option.innerText = oneChannel.channelName;
+      channelSelectEl.appendChild(option);
+  });   
+}
+
+
+exampleBtn.onclick = function(){
+  quill.setContents(exampleSpeechDelta);
+  // quill.setText(exampleSpeech);
+}
+
+var socket; 
+var mqttClient;
+// either Socket if it comes from openedcaptions
+// or MQTT if it comes from BBC
+function getcurrentChannelSelectedType(){
+  return channelSelectEl.options[channelSelectEl.selectedIndex].dataset.connectionType;
+}
+
+function currentChannelSelected(){
+  return channelSelectEl.options[channelSelectEl.selectedIndex].value;
+}
+
+// for mqtt only
+function getcurrentChannelSelectedTopicForMqtt(){
+  return channelSelectEl.options[channelSelectEl.selectedIndex].dataset.topic;
+}
+
+function getCurrentChannelUrl(){
+  var socketUrl =  currentChannelSelected();//channelsUrls[currentChannel];
+  return socketUrl;
+}
+
+function initialiseConnection(){
+  if(getcurrentChannelSelectedType() === 'socket'){
+    console.info('Socket Connection');
+  // io.set('origins', '*:*');
+  socket = io(getCurrentChannelUrl(),{
+    origins: '*' // I think it should be written like this right? Otherwise there would be syntax error
+  });
+  // close to clear out in case switching connection;
+  socket.close();
+  socket.open(); 
+  socket.on('content', function (data) {
+    // console.log(JSON.stringify(data, null, 2));  
+    // -1 so that it adds on same line
+    var length = quill.getLength() -1;
+    var tmpText = " " +data.data.body.toLowerCase().replace(/\r\n/g, "").replace(/>>*/g, "\n").trim();
+    quill.insertText(length, tmpText );
+    //for collaboration only 
+      if (TogetherJS.running) {
+        TogetherJS.send({
+            type: "text-send-from-captions",
+            output: tmpText
+        });
+    }
+    //end collaboration 
+  });
+
+  socket.on('disconnect', () => {
+    console.info("<|----|> disconnected");
+  });
+
+  }
+  else if(getcurrentChannelSelectedType()=== 'mqtt'){
+    console.info('MQTT Connection');
+    mqttClient  = mqtt.connect( getCurrentChannelUrl());
+    // subscribe to topic 
+    mqttClient.on('connect', function () {
+      mqttClient.subscribe( getcurrentChannelSelectedTopicForMqtt() , function (err) {
+        //   if (!err) {
+        //     client.publish('presence', 'Hello mqtt')
+        //   }
+        })
+    })
+    // mqtt client 
+    mqttClient.on('message', function (topic, message) {
+      // message is Buffer
+      console.log(message.toString());
+      // TODO Adding to textEditor, repetition from socket option above
+      var length = quill.getLength() -1;
+      var tmpText = message.toString();
+      quill.insertText(length, tmpText );
+      //for collaboration only 
+        if (TogetherJS.running) {
+          TogetherJS.send({
+              //TODO: change type to text-sent-bbc-mqtt
+              type: "text-send-from-captions",
+              output: tmpText
+          });
+      }
+      // end of adding to textEditor repetition
+    })
+  }
+  else{
+    console.error('not a valid connection type in the list of channels')
+  }
+}
+
+startConnectionEl.onclick = function(){
+    initialiseConnection();
+    console.info("----> start connection");
+    // socket.connect();
+    
+    closeConnectionEl.disabled = false;
+    startConnectionEl.disabled = true;
+    channelSelectEl.disabled = true; 
+}
+
+closeConnectionEl.onclick = function(){
+  console.info("---->  closed connection");
+  if(getcurrentChannelSelectedType() === 'socket'){
+    socket.close();
+  }
+  else if(getcurrentChannelSelectedType()=== 'mqtt'){
+    mqttClient.end();
+  }
+ 
+  closeConnectionEl.disabled = true;
+  startConnectionEl.disabled = false;
+  channelSelectEl.disabled = false;
+}
+
+/* TogetherJS Sync content of text editor across users 
+TODO: 
+- Better sync between 
+- perhaps when together js is on `TogetherJS.send` should send the text from opened caption socket so that they all receive it at same time. 
+- as well as having an on edit changes etc..
+*/
+quill.on('text-change', function(delta, oldDelta, source) {
+  if (source == 'api') {
+    console.log("An API call triggered this change.");
+  } else if (source == 'user') {
+    console.log("A user action triggered this change.");
+    var sharedtext = JSON.stringify(delta);
+    if(TogetherJS.running){
+        TogetherJS.send({
+          type: "text-send",
+          output: sharedtext
+        });
+     }
+
+  }
+}); 
+
+var toghterJSBtnEl = document.getElementById('start-togetherjs');
+
+TogetherJS.on("close", function () {
+  toghterJSBtnEl.disabled = false; 
+  console.info("togehter JS closed");
+  startConnectionEl.disabled = false;
+});
+
+// This makes sure that new users who join are up to speed with content of the text editor
+TogetherJS.hub.on("togetherjs.hello", function (msg) {
+    if (! msg.sameUrl) {
+        return;
+    }
+    console.info('msg', msg);
+    var sharedtext = quill.getContents();
+    console.log("ogetherjs.hello",sharedtext);
+     TogetherJS.send({
+          type: "text-send-new-user",
+          output: JSON.stringify(sharedtext)
+      });
+});
+
+//Response when a new user joins togetherJs session 
+TogetherJS.hub.on("text-send-new-user", function (msg) {
+    if (! msg.sameUrl) {
+        return;
+    }
+    // disable opened caption button to avoid another user being able to start 
+    startConnectionEl.disabled = true;
+    // set content 
+    quill.setContents(JSON.parse(msg.output));
+});
+
+// listener for when the user types 
+TogetherJS.hub.on("text-send", function (msg) {
+    if (! msg.sameUrl) {
+        return;
+    }
+    quill.updateContents(JSON.parse(msg.output));
+});
+
+// Opened caption stream listener updated 
+TogetherJS.hub.on("text-send-from-captions", function (msg) {
+    if (! msg.sameUrl) {
+        return;
+    }
+    var length = quill.getLength() -1;
+    quill.insertText(length, msg.output );
+});
+
+var makeHTMLBtnEl = document.querySelector('.makeHTML');
+
+makeHTMLBtnEl.onclick= function(){
+  //TODO: need to add either side 
+  var content = htmlHead; 
+   content += generateHTMLFromQuilContent();
+   content += htmlTail;
+  var file = new File([content], "index.html", {type: "text/html;charset=utf-8"});
+  saveAs(file, 'index.html');
+}
+
+function generateHTMLFromQuilContent(){
+  // var deltaContent = quill.getContents();
+  // return quillGetHTML(deltaContent)
+  return document.querySelector(".ql-editor").innerHTML; 
+}
+
+var htmlHead = `<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- The above 3 meta tags *must* come first in the head; any other head content must come *after* these tags -->
+    <title>Annotated Article</title>
+
+    <!-- Latest compiled and minified CSS -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+
+<!-- Optional theme -->
+<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
+  </head>
+  <body>
+  <style>
+  .ql-align-center {
+    text-align: center;
+  }
+  /*.highlight*/
+  span {
+    padding: 3px;
+    background-color: #fff200;
+    font-weight: 600;
+  }
+   blockquote{
+    background-color: #f1f3f2;
+    border-left: 0px !important;
+    overflow-wrap: break-word;
+    font-family: "Harriet Text", Georgia, "Times New Roman", Times, serif;
+    display: block;
+    margin: 0;
+    background-color: #f1f3f2;
+  }
+  footer {
+    padding-top: 16px;
+    padding-bottom: 16px;
+    border-top: 5px solid #fff200;
+    background-color: #f1f3f2;
+    font-family: "Helvetica Neue", Helvetica, Roboto, Arial, sans-serif !important;
+    color: black!important;
+    font-weight: bold;
+    margin-top: 14px;
+  }
+
+  blockquote footer:before {
+      content: '';
+  }
+
+  blockquote strong {
+      border-top: 5px solid #fff200;
+      padding-top: 10px;
+  }
+
+  /*When exporting html from quill it adds a br after a paragraph if there is a newline, remove this for better formatting using p tags in exported article */
+  .container br {
+    display: none;
+  }
+
+  img {
+    width: 100%!important;
+  }
+
+  iframe.ql-video {
+    width: 100%;
+    height: 350px;
+  }
+
+  </style>
+  <div class="container">`;
+
+var htmlTail = `
+  </div></body></html>`;
+
+</script>
+
+<script>
+
+// https://stackoverflow.com/questions/8495687/split-array-into-chunks
+function chunk (arr, len) {
+
+  var chunks = [],
+      i = 0,
+      n = arr.length;
+
+  while (i < n) {
+    chunks.push(arr.slice(i, i += len));
+  }
+
+  return chunks;
+}
+
+// Optionally, you can do the following to avoid cluttering the global namespace:
+Array.chunk = chunk;
+
+
+// config = {channelName: "A channel name", channelUrl: "https://..."}
+function makeChannelFormComponent(config){
+  var channelName;
+  var channelUrl;
+
+  if(config == undefined){
+    channelName= "";
+    channelUrl = "";
+  }else{
+    channelName = config.channelName;
+    channelUrl = config.channelUrl;
+  }
+
+var channelsFormComponent = `<div class="row">
+          <div class="col-xs-12 col-sm-5 col-md-5 col-lg-5">
+            <div class="form-group">
+              <label class="control-label" for="focusedInput">Channel Name</label>
+              <input class="form-control" name="channel-name" type="text" value="${channelName}" placeholder="CSPAN">
+            </div>
+          </div>
+          <div class="col-xs-12 col-sm-7 col-md-7 col-lg-7">
+             <div class="form-group">
+              <label class="control-label" for="focusedInput">Channel Streaming URL</label>
+              <input class="form-control" name="channel-url" type="text" value="${channelUrl}" placeholder="https://openedcaptions.com:443">
+             </div>
+          </div>
+        </div>`
+  return channelsFormComponent;
+}
+
+
+
+// Annotated:  https://www.vox.com/a/president-trump-inauguration-speech-transcript-annotations
+//Raw transcript: https://www.vox.com/policy-and-politics/2017/1/20/14337788/transcript-donald-trump-inaugural-address
+
+var exampleSpeech = `Transcript: Donald Trump’s inaugural address
+
+Chief Justice Roberts, President Carter, President Clinton, President Bush, President Obama, fellow Americans, and people of the world, thank you.
+
+We, the citizens of America, are now joined in a great national effort to rebuild our country and restore its promise for all of our people. Together, we will determine the course of America and the world for many, many years to come.
+
+We will face challenges. We will confront hardships, but we will get the job done. Every four years, we gather on these steps to carry out the orderly and peaceful transfer of power. And we are grateful to President Obama and first lady Michelle Obama for their gracious aid throughout this transition. They have been magnificent. Thank you.
+
+Today's ceremony however, has very special meaning, because today we are not merely transferring power from one administration to another or from one party to another, but we are transferring power from Washington, DC, and giving it back to you, the people.
+
+For too long, a small group in our nation’s Capital have reaped the rewards of government while people have borne the cost. Washington flourished, but the people did not share in its wealth.
+
+Politicians prospered, but the jobs left and the factories closed. The establishment protected itself, but not the citizens of our country. Their victories have not been your victories. Their triumphs have not been your triumphs, and while they celebrated in our nation's capital, there was little to celebrate for struggling families all across our land.
+
+That all changes starting right here and right now, because this moment is your moment. It belongs to you. It belongs to everyone gathered here today and everyone watching all across America. This is your day. This is your celebration. And this, the United States of America, is your country.
+
+Because what truly matters is not what truly controls our government but whether our government is controlled by the people. January 20, 2017, will be remembered as the day the people became the rulers of this nation again.
+
+The forgotten men and women of our country will be forgotten no longer. Everyone is listening to you now. You came by the tens of millions to become part of a historic movement, the likes of which the world has never seen before.
+
+At the center of this movement is a crucial conviction, that a nation exists to serve its citizens. Americans want great schools for their children, safe neighborhoods for their families, and good jobs for themselves. These are just and reasonable demands of righteous people and a righteous public. But for too many of our citizens, a different reality exists.
+
+Mothers and children trapped in poverty in our inner cities, rusted-out factories, scattered like tombstones across the landscape of our nation, an education system flush with cash but which leaves our young and beautiful students deprived of all knowledge.
+
+And the crime and the gangs and the drugs that have stolen too many lives and robbed our country of so much unrealized potential. This American carnage stops right here and stops right now.
+
+We are one nation, and their pain is our pain. Their dreams are our dreams, and their success will be our success. We share one heart, one home, and one glorious destiny.
+
+The oath of office I take today is an oath of allegiance to all Americans.
+
+For many decades, we have enriched foreign industry at the expense of American industry, subsidized the armies of other countries while allowing for the very sad depletion of our military.
+
+We have defended other nations' borders while refusing to defend our own, and spent trillions and trillions of dollars overseas while America's infrastructure has fallen into disrepair and decay.
+
+We've made other countries rich while the wealth, strength, and confidence of our country has dissipated over the horizon. One by one, the factories shuttered and left our shores with not even a thought about the millions and millions of American workers that were left behind. The wealth of our middle class has been ripped from their homes and then redistributed all across the world.
+
+But that is the past, and now we are looking only to the future. We assembled here today are issuing a new decree to be heard in every city, in every foreign capital, and in every hall of power. From this day forward, a new vision will govern our land. From this day forward, it's going to be only America first, America first.
+
+Every decision on trade, on taxes, on immigration, on foreign affairs will be made to benefit American workers and American families. We must protect our borders from the ravages of other countries making our products, stealing our companies, and destroying our jobs.
+
+
+Protection will lead to great prosperity and strength. I will fight for you with every breath in my body. And I will never, ever let you down.
+
+America will start winning again, winning like never before. We will bring back our jobs. We will bring back our borders. We will bring back our wealth. And we will bring back our dreams. We will build new roads and highways and bridges and airports and tunnels and railways all across our wonderful nation. We will get our people off of welfare and back to work,rebuilding our country with American hands and American labor.
+
+We will follow two simple rules: Buy American and hire American.
+
+We will seek friendship and goodwill with the nations of the world, but we do so with the understanding that it is the right of all nations to put their own interests first. We do not seek to impose our way of life on anyone, but rather to let it shine as an example. We will shine for everyone to follow. We will reinforce old alliances and form new ones and reform the world against radical Islamic terrorism, which we will eradicate from the face of the Earth.
+
+At the bedrock of our politics will be a total allegiance to the United States of America and through our loyalty to our country, we will rediscover our loyalty to each other. When you open your heart to patriotism, there is no room for prejudice. The Bible tells us how good and pleasant it is when God's people live together in unity. We must speak our minds openly, debate our disagreements honestly, but always pursue solidarity.
+
+When America is united, America is totally unstoppable.
+
+There should be no fear. We are protected, and we will always be protected. We will be protected by the great men and women of our military and law enforcement. And most importantly, we will be protected by God.
+
+Finally, we must think big and dream even bigger. In America, we understand that a nation is only living as long it is striving. We will no longer accept politicians who are all talk and no action, constantly complaining but never doing anything about it. The time for empty talk is over.
+
+Now arrives the hour of action. Do not allow anyone to tell you that it cannot be done. No challenge can match the heart and fight and spirit of America. We will not fail. Our country will thrive and prosper again. We stand at the birth of a new millennium, ready to unlock the mysteries of space, to free the Earth from the miseries of disease and harness the energies, industries, and technologies of tomorrow.
+
+A new national pride will stir ourselves, lift our sights, and heal our divisions. It's time to remember that old wisdom our soldiers will never forget, that whether we are black or brown or white, we all bleed the same red blood of patriots. We all enjoy the same glorious freedoms. And we all salute the same great American flag.
+
+And whether a child is born in the urban sprawl of Detroit or the windswept plains of Nebraska, they look at the same night sky. They fill their heart with the same dreams, and they are infused with the breath of life by the same almighty creator.
+
+So to all Americans, in every city near and far, small and large, from mountain to mountain, from ocean to ocean, hear these words: You will never be ignored again.
+
+Your voice, your hopes, and your dreams will define our American destiny. And your courage, goodness, and love will forever guide us along the way.
+
+Together, we will make America strong again. We will make America wealthy again. We will make America proud again. We will make America safe again.
+
+And yes, together, we will make America great again.
+
+Thank you. God bless you. And God bless America.`
+
+var exampleSpeechDelta = {"ops":[{"insert":"President Trump's inauguration speech, annotated"},{"attributes":{"header":1},"insert":"\n"},{"insert":"\nChief Justice Roberts, President Carter, President Clinton, President Bush, President Obama, fellow Americans, and people of the world, thank you.\n\nWe, the citizens of America, are now joined in a great national effort to rebuild our country and restore its promise for all of our people. Together, we will determine the course of America and the world for many, many years to come.\n\nWe will face challenges. We will confront hardships, but we will get the job done. Every four years, we gather on these steps to carry out the orderly and peaceful transfer of power. And we are grateful to President Obama and first lady Michelle Obama for their gracious aid throughout this transition. They have been magnificent. Thank you.\n\nToday's ceremony however, has very special meaning, because today we are not merely transferring power from one administration to another or from one party to another, but we are transferring power from Washington, DC, and giving it back to you, the people.\n\nFor too long, a small group in our nation’s Capital have reaped the rewards of government while people have borne the cost. Washington flourished, but the people did not share in its wealth.\n\n"},{"attributes":{"background":"#ffff00"},"insert":"Politicians prospered, but the jobs left and the factories closed"},{"insert":". The establishment protected itself, but not the citizens of our country. Their victories have not been your victories. Their triumphs have not been your triumphs, and while they celebrated in our nation's capital, there was little to celebrate for struggling families all across our land.\n\nThis line clearly speaks to how many people feel, but in reality there are more people employed in the United States in January 2017 than at any previous time in American history, and inflation-adjusted wages are higher than they have ever been."},{"attributes":{"blockquote":true},"insert":"\n"},{"attributes":{"bold":true},"insert":"Matthew Yglesias, "},{"attributes":{"bold":true,"color":"#4f7177","link":"http://twitter.com/mattyglesias"},"insert":"@mattyglesias"},{"attributes":{"blockquote":true},"insert":"\n"},{"insert":"\nThat all changes starting right here and right now, because this moment is your moment. It belongs to you. It belongs to everyone gathered here today and everyone watching all across America. This is your day. This is your celebration. And this, the United States of America, is your country.\n\nBecause what truly matters is not what truly controls our government but whether our government is controlled by the people. January 20, 2017, will be remembered as the day the people became the rulers of this nation again.\n\nThe forgotten men and women of our country will be forgotten no longer. Everyone is listening to you now. You came by the tens of millions to become part of a historic movement, the likes of which the world has never seen before.\n\nAt the center of this movement is a crucial conviction, that a nation exists to serve its citizens. Americans want great schools for their children, safe neighborhoods for their families, and good jobs for themselves. These are just and reasonable demands of righteous people and a righteous public. But for too many of our citizens, a different reality exists.\n\nMothers and children trapped in poverty in our inner cities, rusted-out factories, scattered like tombstones across the landscape of our nation, an education system flush with cash but which leaves our young and beautiful students deprived of all knowledge.\n\nAnd the crime and the gangs and the drugs that have stolen too many lives and robbed our country of so much unrealized potential. This American carnage stops right here and stops right now.\n\nWe are one nation, and their pain is our pain. Their dreams are our dreams, and their success will be our success. We share one heart, one home, and one glorious destiny.\n\nThe oath of office I take today is an oath of allegiance to all Americans.\n\nFor many decades, we have enriched foreign industry at the expense of American industry, subsidized the armies of other countries while allowing for the very sad depletion of our military.\n\nWe have defended other nations' borders while refusing to defend our own, and spent trillions and trillions of dollars overseas while America's infrastructure has fallen into disrepair and decay.\n\nWe've made other countries rich while the wealth, strength, and confidence of our country has dissipated over the horizon. One by one, the factories shuttered and left our shores with not even a thought about the millions and millions of American workers that were left behind. The wealth of our middle class has been ripped from their homes and then redistributed all across the world.\n\nBut that is the past, and now we are looking only to the future. We assembled here today are issuing a new decree to be heard in every city, in every foreign capital, and in every hall of power. From this day forward, a new vision will govern our land. From this day forward, it's going to be only America first, America first.\n\nEvery decision on trade, on taxes, on immigration, on foreign affairs will be made to benefit American workers and American families. We must protect our borders from the ravages of other countries making our products, stealing our companies, and destroying our jobs.\n\n\nProtection will lead to great prosperity and strength. I will fight for you with every breath in my body. And I will never, ever let you down.\n\nAmerica will start winning again, winning like never before. We will bring back our jobs. We will bring back our borders. We will bring back our wealth. And we will bring back our dreams. We will build new roads and highways and bridges and airports and tunnels and railways all across our wonderful nation. We will get our people off of welfare and back to work,rebuilding our country with American hands and American labor.\n\nWe will follow two simple rules: Buy American and hire American.\n\nWe will seek friendship and goodwill with the nations of the world, but we do so with the understanding that it is the right of all nations to put their own interests first. We do not seek to impose our way of life on anyone, but rather to let it shine as an example. We will shine for everyone to follow. We will reinforce old alliances and form new ones and reform the world against radical Islamic terrorism, which we will eradicate from the face of the Earth.\n\nAt the bedrock of our politics will be a total allegiance to the United States of America and through our loyalty to our country, we will rediscover our loyalty to each other. When you open your heart to patriotism, there is no room for prejudice. The Bible tells us how good and pleasant it is when God's people live together in unity. We must speak our minds openly, debate our disagreements honestly, but always pursue solidarity.\n\nWhen America is united, America is totally unstoppable.\n\nThere should be no fear. We are protected, and we will always be protected. We will be protected by the great men and women of our military and law enforcement. And most importantly, we will be protected by God.\n\nFinally, we must think big and dream even bigger. In America, we understand that a nation is only living as long it is striving. We will no longer accept politicians who are all talk and no action, constantly complaining but never doing anything about it. The time for empty talk is over.\n\nNow arrives the hour of action. Do not allow anyone to tell you that it cannot be done. No challenge can match the heart and fight and spirit of America. We will not fail. Our country will thrive and prosper again. We stand at the birth of a new millennium, ready to unlock the mysteries of space, to free the Earth from the miseries of disease and harness the energies, industries, and technologies of tomorrow.\n\nA new national pride will stir ourselves, lift our sights, and heal our divisions. It's time to remember that old wisdom our soldiers will never forget, that whether we are black or brown or white, we all bleed the same red blood of patriots. We all enjoy the same glorious freedoms. And we all salute the same great American flag.\n\nAnd whether a child is born in the urban sprawl of Detroit or the windswept plains of Nebraska, they look at the same night sky. They fill their heart with the same dreams, and they are infused with the breath of life by the same almighty creator.\n\nSo to all Americans, in every city near and far, small and large, from mountain to mountain, from ocean to ocean, hear these words: You will never be ignored again.\n\nYour voice, your hopes, and your dreams will define our American destiny. And your courage, goodness, and love will forever guide us along the way.\n\nTogether, we will make America strong again. We will make America wealthy again. We will make America proud again. We will make America safe again.\n\nAnd yes, together, we will make America great again.\n\nThank you. God bless you. And God bless America.\n"}]};
+
+
+</script>
+   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js" integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa" crossorigin="anonymous"></script>
+
+</body>
+
+<html>

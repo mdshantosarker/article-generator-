@@ -1,0 +1,20 @@
+{
+  "name": "annotated_articles_generator",
+  "version": "2.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "server": "node index.js",
+    "client": "http-server -a 0.0.0.0 -p 8001",
+    "start": "npm run server & npm run client & open http://localhost:8001/index.html"
+  },
+  "author": "Pietro Passarelli <pietro.passarelli@gmail.com> (http://pietropassarelli.com)",
+  "license": "ISC",
+  "devDependencies": {},
+  "dependencies": {
+    "http-server": "^0.11.1",
+    "mqtt": "^2.18.0",
+    "socket.io": "^2.1.1"
+  }
+}
